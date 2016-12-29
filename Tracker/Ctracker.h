@@ -19,6 +19,9 @@ public:
 		lastRect(rect),
 		KF(p, dt, Accel_noise_mag)
 	{
+        negCounter=0;
+        posCounter=0;
+        birdCounter=0;
 	}
 
 	track_t CalcDist(const Point_t& p)
@@ -65,7 +68,12 @@ public:
 
 	std::vector<Point_t> trace;
 	size_t track_id;
-	size_t skipped_frames; 
+    size_t skipped_frames;
+
+    int posCounter;
+    int negCounter;
+    int birdCounter;
+    void getCount(int index);
 
 	cv::Rect GetLastRect()
 	{
@@ -96,7 +104,10 @@ public:
 	};
 
 	std::vector<std::unique_ptr<CTrack>> tracks;
-	void Update(const std::vector<Point_t>& detections, const std::vector<cv::Rect>& rects, DistType distType);
+    void Update(const std::vector<cv::Point2d>& detections, const std::vector<cv::Rect>& rects, DistType distType);
+    bool removedTrackWithPositive;
+    bool wasBird;
+    void updateEmpty();
 
 private:
 	// Шаг времени опроса фильтра

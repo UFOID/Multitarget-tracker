@@ -18,15 +18,13 @@ CTracker::CTracker(
       max_trace_length(max_trace_length_),
 	  NextTrackID(0)
 {
+    removedTrackWithPositive=false;
+    wasBird=false;
 }
 // ---------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------
-void CTracker::Update(
-	const std::vector<Point_t>& detections,
-	const std::vector<cv::Rect>& rects,
-	DistType distType
-	)
+void CTracker::Update(const std::vector<cv::Point2d>& detections, const std::vector<cv::Rect>& rects, DistType distType)
 {
 	assert(detections.size() == rects.size());
 
@@ -106,11 +104,19 @@ void CTracker::Update(
 
 		// -----------------------------------
 		// If track didn't get detects long time, remove it.
+        // If one of the removed track has more positive than negative detection set bool to true
+       // If one of the removed track was counted as a bird twice or more set bool to true
 		// -----------------------------------
 		for (int i = 0; i < static_cast<int>(tracks.size()); i++)
 		{
 			if (tracks[i]->skipped_frames > maximum_allowed_skipped_frames)
 			{
+                if(tracks[i]->posCounter>tracks[i]->negCounter){
+                    if(tracks[i]->birdCounter<2){
+                        removedTrackWithPositive=true;
+                    }
+                    else wasBird=true;
+                }
 				tracks.erase(tracks.begin() + i);
 				assignment.erase(assignment.begin() + i);
 				i--;
@@ -147,9 +153,38 @@ void CTracker::Update(
 	}
 
 }
+
+// -----------------------------------
+// Update tracking of there was no movement detected
+// -----------------------------------
+void CTracker::updateEmpty(){
+    for(int i=0; i < (int)tracks.size(); i++)
+    {
+        tracks[i]->skipped_frames++;
+        if((int)tracks[i]->skipped_frames > maximum_allowed_skipped_frames)
+        {
+
+            if(tracks[i]->posCounter>tracks[i]->negCounter){
+                if(tracks[i]->birdCounter<2){
+                    removedTrackWithPositive=true;
+                }
+                else wasBird=true;
+            }
+            else if (tracks[i]->birdCounter>1){
+                wasBird=true;
+            }
+            //cout << "Pos: " << tracks[i]->posCounter << " Neg: " << tracks[i]->negCounter << endl;
+            tracks.erase(tracks.begin()+i);
+            //assignment.erase(assignment.begin()+i);
+            i--;
+
+        }
+    }
+}
 // ---------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------
 CTracker::~CTracker(void)
 {
+
 }
